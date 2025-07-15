@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roblox API Key Manager</title>
+  <style>
+    /* Animated gradient background */
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes bubbleUp {
+      0% { transform: translateY(0) scale(0.5); opacity: 1; }
+      100% { transform: translateY(-110vh) scale(1); opacity: 0; }
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow: auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(-45deg, #ff9a9e, #fad0c4, #fad0c4, #ff9a9e);
+      background-size: 400% 400%;
+      animation: gradient 15s ease infinite;
+      position: relative;
+    }
+    .bubbles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .bubbles span {
+      position: absolute;
+      bottom: -100px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 50%;
+      animation: bubbleUp 10s infinite ease-in;
+    }
+    .container {
+      position: relative;
+      z-index: 1;
+      background: #fff;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      width: 400px;
+      max-height: 90vh;
+      overflow-y: auto;
+      margin: 2rem;
+    }
+    h1, h2 { margin-top: 0; }
+    .field { margin-bottom: 1rem; }
+    .field label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+    .field input {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .actions button {
+      flex: 1;
+      padding: 0.5rem;
+      border: none;
+      border-radius: 4px;
+      background: #007bff;
+      color: #fff;
+      cursor: pointer;
+    }
+    .actions button:hover { background: #0056b3; }
+    #output {
+      background: #f4f4f4;
+      padding: 1rem;
+      border-radius: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 1rem;
+      white-space: pre-wrap;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="bubbles"></div>
+  <div class="container">
+    <h1>API Key Manager</h1>
+    <div class="field">
+      <label for="pw">Admin Password</label>
+      <input type="password" id="pw" placeholder="Enter password" oninput="toggleSections()" />
+    </div>
+
+    <div id="api-sections" class="hidden">
+      <h2>Generate Key</h2>
+      <div class="field">
+        <label for="genUser">User ID</label>
+        <input id="genUser" placeholder="e.g. 12345678" />
+      </div>
+      <div class="actions">
+        <button onclick="api('generate', { userId: genUser.value })">Generate</button>
+      </div>
+
+      <h2>Revoke Key</h2>
+      <div class="field">
+        <label for="keyInput">API Key</label>
+        <input id="keyInput" placeholder="Your API key here" />
+      </div>
+      <div class="actions">
+        <button onclick="api('revoke', { apiKey: keyInput.value })">Revoke</button>
+      </div>
+
+      <h2>All Keys</h2>
+      <div class="actions">
+        <button onclick="fetchKeys()">Refresh List</button>
+      </div>
+      <pre id="output"></pre>
+    </div>
+  </div>
+
+  <script>
+    // Generate bubbles dynamically
+    const bubbleContainer = document.querySelector('.bubbles');
+    for (let i = 0; i < 20; i++) {
+      const bubble = document.createElement('span');
+      const size = Math.random() * 60 + 20;
+      bubble.style.width = `${size}px`;
+      bubble.style.height = `${size}px`;
+      bubble.style.left = `${Math.random() * 100}%`;
+      bubble.style.animationDuration = `${Math.random() * 10 + 5}s`;
+      bubble.style.animationDelay = `${Math.random() * 5}s`;
+      bubbleContainer.appendChild(bubble);
+    }
+
+    function toggleSections() {
+      const pwVal = document.getElementById('pw').value;
+      const apiSec = document.getElementById('api-sections');
+      apiSec.classList.toggle('hidden', pwVal !== 'Admin');
+    }
+
+    function api(action, body) {
+      const pw = document.getElementById('pw').value;
+      fetch(`/api/${action}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-password': pw
+        },
+        body: JSON.stringify(body)
+      })
+      .then(r => r.json())
+      .then(j => document.getElementById('output').textContent = JSON.stringify(j, null, 2));
+    }
+
+    function fetchKeys() {
+      const pw = document.getElementById('pw').value;
+      fetch('/api/keys', { headers: { 'x-api-password': pw } })
+        .then(r => r.json())
+        .then(data => {
+          // Format createdAt timestamps
+          const formatted = data.map(item => ({
+            ...item,
+            createdAt: new Date(item.createdAt).toLocaleString()
+          }));
+          document.getElementById('output').textContent = JSON.stringify(formatted, null, 2);
+        });
+    }
+  </script>
+</body>
+</html>
