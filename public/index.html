@@ -1,7 +1,8 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Roblox API Key Manager</title>
   <style>
     /* Animated gradient background */
@@ -14,7 +15,6 @@
       0% { transform: translateY(0) scale(0.5); opacity: 1; }
       100% { transform: translateY(-110vh) scale(1); opacity: 0; }
     }
-
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -31,10 +31,8 @@
     }
     .bubbles {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       pointer-events: none;
       overflow: hidden;
       z-index: 0;
@@ -42,7 +40,7 @@
     .bubbles span {
       position: absolute;
       bottom: -100px;
-      background: rgba(255, 255, 255, 0.7);
+      background: rgba(255,255,255,0.7);
       border-radius: 50%;
       animation: bubbleUp 10s infinite ease-in;
     }
@@ -90,6 +88,7 @@
       overflow-y: auto;
       margin-top: 1rem;
       white-space: pre-wrap;
+      font-family: monospace;
     }
     .hidden { display: none; }
   </style>
@@ -131,56 +130,80 @@
   </div>
 
   <script>
-  const BASE_URL = "https://db9e24b1-7acc-423c-b23f-bcd2e1bb9f2d-00-39xl3mylb7bid.janeway.replit.dev";
+    // Generate animated bubbles dynamically
+    const bubbleContainer = document.querySelector('.bubbles');
+    for(let i = 0; i < 20; i++) {
+      const bubble = document.createElement('span');
+      const size = Math.random() * 60 + 20;
+      bubble.style.width = `${size}px`;
+      bubble.style.height = `${size}px`;
+      bubble.style.left = `${Math.random() * 100}%`;
+      bubble.style.animationDuration = `${Math.random() * 10 + 5}s`;
+      bubble.style.animationDelay = `${Math.random() * 5}s`;
+      bubbleContainer.appendChild(bubble);
+    }
 
-  // Generate bubbles dynamically
-  const bubbleContainer = document.querySelector('.bubbles');
-  for (let i = 0; i < 20; i++) {
-    const bubble = document.createElement('span');
-    const size = Math.random() * 60 + 20;
-    bubble.style.width = `${size}px`;
-    bubble.style.height = `${size}px`;
-    bubble.style.left = `${Math.random() * 100}%`;
-    bubble.style.animationDuration = `${Math.random() * 10 + 5}s`;
-    bubble.style.animationDelay = `${Math.random() * 5}s`;
-    bubbleContainer.appendChild(bubble);
-  }
+    function toggleSections() {
+      const pwVal = document.getElementById('pw').value;
+      const apiSec = document.getElementById('api-sections');
+      apiSec.classList.toggle('hidden', pwVal !== 'Admin');
+    }
 
-  function toggleSections() {
-    const pwVal = document.getElementById('pw').value;
-    const apiSec = document.getElementById('api-sections');
-    apiSec.classList.toggle('hidden', pwVal !== 'Admin');
-  }
+    // Helper to format timestamps nicely
+    function formatDate(ts) {
+      if (!ts) return "N/A";
+      const d = new Date(ts);
+      return d.toLocaleString();
+    }
 
-  function api(action, body) {
-    const pw = document.getElementById('pw').value;
-    fetch(`${BASE_URL}/api/${action}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-password': pw
-      },
-      body: JSON.stringify(body)
-    })
-    .then(r => r.json())
-    .then(j => document.getElementById('output').textContent = JSON.stringify(j, null, 2));
-  }
-
-  function fetchKeys() {
-    const pw = document.getElementById('pw').value;
-    fetch(`${BASE_URL}/api/keys`, { headers: { 'x-api-password': pw } })
-      .then(r => r.json())
+    // Call API with action and body, display full returned info
+    function api(action, body) {
+      const pw = document.getElementById('pw').value;
+      fetch(`/api/${action}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-password': pw
+        },
+        body: JSON.stringify(body)
+      })
+      .then(res => {
+        if (!res.ok) return res.json().then(e => Promise.reject(e));
+        return res.json();
+      })
       .then(data => {
-        const formatted = Object.entries(data).map(([apiKey, info]) => ({
-          apiKey,
-          userId: info.userId,
-          status: info.status,
-          createdAt: new Date(info.createdAt).toLocaleString()
-        }));
-        document.getElementById('output').textContent = JSON.stringify(formatted, null, 2);
+        // Format createdAt if present
+        if (data.createdAt) {
+          data.createdAtFormatted = formatDate(data.createdAt);
+        }
+        document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+      })
+      .catch(err => {
+        document.getElementById('output').textContent = 'Error: ' + (err.error || JSON.stringify(err));
       });
-  }
-</script>
+    }
 
+    // Fetch all keys and show formatted list
+    function fetchKeys() {
+      const pw = document.getElementById('pw').value;
+      fetch('/api/keys', { headers: { 'x-api-password': pw } })
+        .then(res => {
+          if (!res.ok) return res.json().then(e => Promise.reject(e));
+          return res.json();
+        })
+        .then(data => {
+          const formatted = data.map(item => ({
+            apiKey: item.apiKey,
+            userId: item.userId,
+            createdAt: item.createdAt,
+            createdAtFormatted: formatDate(item.createdAt)
+          }));
+          document.getElementById('output').textContent = JSON.stringify(formatted, null, 2);
+        })
+        .catch(err => {
+          document.getElementById('output').textContent = 'Error: ' + (err.error || JSON.stringify(err));
+        });
+    }
+  </script>
 </body>
 </html>
