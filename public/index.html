@@ -131,54 +131,56 @@
   </div>
 
   <script>
-    // Generate bubbles dynamically
-    const bubbleContainer = document.querySelector('.bubbles');
-    for (let i = 0; i < 20; i++) {
-      const bubble = document.createElement('span');
-      const size = Math.random() * 60 + 20;
-      bubble.style.width = `${size}px`;
-      bubble.style.height = `${size}px`;
-      bubble.style.left = `${Math.random() * 100}%`;
-      bubble.style.animationDuration = `${Math.random() * 10 + 5}s`;
-      bubble.style.animationDelay = `${Math.random() * 5}s`;
-      bubbleContainer.appendChild(bubble);
-    }
+  const BASE_URL = "https://db9e24b1-7acc-423c-b23f-bcd2e1bb9f2d-00-39xl3mylb7bid.janeway.replit.dev";
 
-    function toggleSections() {
-      const pwVal = document.getElementById('pw').value;
-      const apiSec = document.getElementById('api-sections');
-      apiSec.classList.toggle('hidden', pwVal !== 'Admin');
-    }
+  // Generate bubbles dynamically
+  const bubbleContainer = document.querySelector('.bubbles');
+  for (let i = 0; i < 20; i++) {
+    const bubble = document.createElement('span');
+    const size = Math.random() * 60 + 20;
+    bubble.style.width = `${size}px`;
+    bubble.style.height = `${size}px`;
+    bubble.style.left = `${Math.random() * 100}%`;
+    bubble.style.animationDuration = `${Math.random() * 10 + 5}s`;
+    bubble.style.animationDelay = `${Math.random() * 5}s`;
+    bubbleContainer.appendChild(bubble);
+  }
 
-    function api(action, body) {
-      const pw = document.getElementById('pw').value;
-      fetch(`/api/${action}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-password': pw
-        },
-        body: JSON.stringify(body)
-      })
-      .then(r => r.json())
-      .then(j => document.getElementById('output').textContent = JSON.stringify(j, null, 2));
-    }
+  function toggleSections() {
+    const pwVal = document.getElementById('pw').value;
+    const apiSec = document.getElementById('api-sections');
+    apiSec.classList.toggle('hidden', pwVal !== 'Admin');
+  }
 
-function fetchKeys() {
-  const pw = document.getElementById('pw').value;
-  fetch('/api/keys', { headers: { 'x-api-password': pw } })
+  function api(action, body) {
+    const pw = document.getElementById('pw').value;
+    fetch(`${BASE_URL}/api/${action}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-password': pw
+      },
+      body: JSON.stringify(body)
+    })
     .then(r => r.json())
-    .then(data => {
-      // Convert keys object into array with apiKey included
-      const formatted = Object.entries(data).map(([apiKey, info]) => ({
-        apiKey,
-        userId: info.userId,
-        status: info.status,
-        createdAt: new Date(info.createdAt).toLocaleString()
-      }));
-      document.getElementById('output').textContent = JSON.stringify(formatted, null, 2);
-    });
-}
-  </script>
+    .then(j => document.getElementById('output').textContent = JSON.stringify(j, null, 2));
+  }
+
+  function fetchKeys() {
+    const pw = document.getElementById('pw').value;
+    fetch(`${BASE_URL}/api/keys`, { headers: { 'x-api-password': pw } })
+      .then(r => r.json())
+      .then(data => {
+        const formatted = Object.entries(data).map(([apiKey, info]) => ({
+          apiKey,
+          userId: info.userId,
+          status: info.status,
+          createdAt: new Date(info.createdAt).toLocaleString()
+        }));
+        document.getElementById('output').textContent = JSON.stringify(formatted, null, 2);
+      });
+  }
+</script>
+
 </body>
 </html>
