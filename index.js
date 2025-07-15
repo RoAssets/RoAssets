@@ -6,13 +6,14 @@ const app = express();
 app.use(express.json());
 app.use(express.static("public"));
 
-// Direct admin password check (plain text)
+// Admin password
 const ADMIN_PASSWORD = "Admin";
 
 // In-memory stores
 const userKeyMap = {}; // { userId: apiKey }
-const keys = {};      // { apiKey: { userId, createdAt } }
+const keys = {};       // { apiKey: { userId, createdAt } }
 
+// Middleware to check password
 function checkPass(req, res, next) {
   const pw = req.headers["x-api-password"];
   if (!pw) return res.status(401).json({ error: "Missing password" });
@@ -20,29 +21,37 @@ function checkPass(req, res, next) {
   next();
 }
 
-// Generate or return existing key for a userId
+// POST /api/generate - create or return existing key with full info
 app.post("/api/generate", checkPass, (req, res) => {
   const { userId } = req.body;
   if (!userId) return res.status(400).json({ error: "Missing userId" });
 
-  // Return existing key if present
+  // Return existing key info
   if (userKeyMap[userId]) {
-    return res.json({ apiKey: userKeyMap[userId], note: "existing" });
+    const existingKey = userKeyMap[userId];
+    return res.json({
+      apiKey: existingKey,
+      userId,
+      createdAt: keys[existingKey].createdAt,
+      note: "existing"
+    });
   }
 
-  // Generate new key
+  // Create new key and store data
   const apiKey = crypto.randomBytes(24).toString("hex");
+  const createdAt = Date.now();
+
   userKeyMap[userId] = apiKey;
-  keys[apiKey] = { userId, createdAt: Date.now() };
-  res.json({ apiKey, note: "new" });
+  keys[apiKey] = { userId, createdAt };
+
+  res.json({ apiKey, userId, createdAt, note: "new" });
 });
 
-// Revoke (delete) a specific apiKey
+// POST /api/revoke - revoke key
 app.post("/api/revoke", checkPass, (req, res) => {
   const { apiKey } = req.body;
   if (!keys[apiKey]) return res.status(404).json({ error: "Key not found" });
 
-  // Remove from both stores
   const { userId } = keys[apiKey];
   delete keys[apiKey];
   if (userKeyMap[userId] === apiKey) delete userKeyMap[userId];
@@ -50,10 +59,18 @@ app.post("/api/revoke", checkPass, (req, res) => {
   res.json({ success: true, message: "Key revoked and removed" });
 });
 
-// List all active keys and mappings
+// GET /api/keys - list all keys with userId and createdAt
 app.get("/api/keys", checkPass, (req, res) => {
-  const all = Object.entries(keys).map(([key, data]) => ({ apiKey: key, ...data }));
+  const all = Object.entries(keys).map(([key, data]) => ({
+    apiKey: key,
+    userId: data.userId,
+    createdAt: data.createdAt
+  }));
   res.json(all);
 });
 
-app.listen(3000, () => console.log("Listening on port 3000"));
+// Serve frontend from public folder (optional if you want UI here)
+// app.use(express.static(path.join(__dirname, "public")));
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
