@@ -164,19 +164,21 @@
       .then(j => document.getElementById('output').textContent = JSON.stringify(j, null, 2));
     }
 
-    function fetchKeys() {
-      const pw = document.getElementById('pw').value;
-      fetch('/api/keys', { headers: { 'x-api-password': pw } })
-        .then(r => r.json())
-        .then(data => {
-          // Format createdAt timestamps
-          const formatted = data.map(item => ({
-            ...item,
-            createdAt: new Date(item.createdAt).toLocaleString()
-          }));
-          document.getElementById('output').textContent = JSON.stringify(formatted, null, 2);
-        });
-    }
+function fetchKeys() {
+  const pw = document.getElementById('pw').value;
+  fetch('/api/keys', { headers: { 'x-api-password': pw } })
+    .then(r => r.json())
+    .then(data => {
+      // Convert keys object into array with apiKey included
+      const formatted = Object.entries(data).map(([apiKey, info]) => ({
+        apiKey,
+        userId: info.userId,
+        status: info.status,
+        createdAt: new Date(info.createdAt).toLocaleString()
+      }));
+      document.getElementById('output').textContent = JSON.stringify(formatted, null, 2);
+    });
+}
   </script>
 </body>
 </html>
